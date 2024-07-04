@@ -16,7 +16,8 @@ export class Task {
 
     @Column({
         type: 'varchar', 
-        length: 150, 
+        length: 150,
+        nullable: true
     })
     description: string;
 
@@ -28,6 +29,6 @@ export class Task {
     @Column()
     subjectId: number;
 
-    @ManyToOne(() => Subject, subject => subject.tasks)
+    @ManyToOne(() => Subject, subject => subject.tasks, {onDelete: 'CASCADE', onUpdate: 'CASCADE'})
     subject: Subject;
 }
