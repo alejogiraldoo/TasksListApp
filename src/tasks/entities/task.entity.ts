@@ -23,6 +23,7 @@ export class Task {
 
     @Column({
         type: 'date',
+        nullable: true
     })
     date: Date;
 

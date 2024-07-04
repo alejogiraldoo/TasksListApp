@@ -31,7 +31,7 @@ export class SubjectsController {
     updateSubject(
         @Param('id', ParseIntPipe) id: number,
         @Body(TransformerStringsPipe) subject: UpdateSubjectDto
-    ){
+    ): Promise<Subject | HttpException> {
         return this.subjectsService.updateSubject(id, subject);
     }
 
