@@ -18,12 +18,12 @@ export class SubjectsController {
     }
 
     @Get(':id')
-    getSubjectById(@Param('id', ParseIntPipe) id: number): Promise<Subject | HttpException> {
+    getSubjectById(@Param('id', ParseIntPipe) id: number): Promise<Subject> {
         return this.subjectsService.getSubjectById(id);
     }
 
     @Post('create')
-    createSubject(@Body(TransformerStringsPipe) subject: CreateSubjectDto): Promise<Subject | HttpException> {
+    createSubject(@Body(TransformerStringsPipe) subject: CreateSubjectDto): Promise<Subject> {
         return this.subjectsService.createSubject(subject);
     }
 
@@ -31,12 +31,12 @@ export class SubjectsController {
     updateSubject(
         @Param('id', ParseIntPipe) id: number,
         @Body(TransformerStringsPipe) subject: UpdateSubjectDto
-    ): Promise<Subject | HttpException> {
+    ): Promise<Subject> {
         return this.subjectsService.updateSubject(id, subject);
     }
 
     @Delete('remove/:id')
-    deleteSubject(@Param('id', ParseIntPipe) id: number): Promise<Subject | HttpException> {
+    deleteSubject(@Param('id', ParseIntPipe) id: number): Promise<Subject> {
         return this.subjectsService.deleteSubject(id);
     }
 }

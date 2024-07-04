@@ -1,3 +1,4 @@
+import { Type } from "class-transformer";
 import { IsDate, IsNumber, IsString } from "class-validator";
 
 export class UpdateTaskDto {
@@ -8,8 +9,6 @@ export class UpdateTaskDto {
     description?: string;
 
     @IsDate()
+    @Type(() => Date)
     date?: Date;
-
-    @IsNumber()
-    subjectId?: number;
 }

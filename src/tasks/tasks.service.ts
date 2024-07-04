@@ -27,39 +27,54 @@ export class TasksService {
             }
         });
 
-        if(!taskFound) return new HttpException('Task not found', HttpStatus.NOT_FOUND);
+        if(!taskFound) throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
+        return taskFound;
+    }
+
+    private async getTaskByName(name: string) {
+        const taskFound = await this.taskRepository.findOne({
+            where: {
+                name: name
+            }
+        });
+
+        if (!taskFound) throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
         return taskFound;
     }
 
     async createTask(task: CreateTaskDto){
-        const taskFound = await this.taskRepository.findOne({
-            where: {
-                name: task.name
+        await this.subjectsService.getSubjectById(task.subjectId);
+        
+        try{
+            const taskFound = await this.getTaskByName(task.name);
+            if(taskFound) throw new HttpException('Task already exists', HttpStatus.CONFLICT);
+        } catch (error) {
+            if(error instanceof HttpException && error.getStatus() === HttpStatus.NOT_FOUND){
+                const newTask = this.taskRepository.create(task);
+                return await this.taskRepository.save(newTask);
             }
-        });
-
-        const subjectFound = await this.subjectsService.getSubjectById(task.subjectId);
-
-        if(taskFound) return new HttpException('Task already exists', HttpStatus.CONFLICT);
-        if(!subjectFound) return new HttpException('Subject not found', HttpStatus.NOT_FOUND);
-
-        const newTask = this.taskRepository.create(task);
-        return this.taskRepository.save(newTask);
+            throw error;
+        }
     }
 
     async updateTask(id: number, task: UpdateTaskDto){
-        const taskFound = await this.getTaskById(id);
+        const [existingTaskById, existingTaskByName] : [Task | HttpException, Task | HttpException] = await Promise.all([
+            this.getTaskById(id).catch(error => error),
+            this.getTaskByName(task.name).catch(error => error)
+        ]);
 
-        if(!taskFound) return new HttpException('Task not found', HttpStatus.NOT_FOUND);
+        if (existingTaskById instanceof HttpException) throw existingTaskById;
+        
 
-        const updatedTask = Object.assign(taskFound, task);
+        if (!(existingTaskByName instanceof HttpException))
+            throw new HttpException('Task already exists', HttpStatus.CONFLICT);
+
+        const updatedTask = Object.assign(existingTaskById, task);
         return this.taskRepository.save(updatedTask);
     }
 
     async deleteTask(id: number){
         const taskFound = await this.getTaskById(id);
-
-        if(!taskFound) return new HttpException('Task not found', HttpStatus.NOT_FOUND);
 
         this.taskRepository.delete({id});
         return taskFound;

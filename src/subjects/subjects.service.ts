@@ -16,7 +16,7 @@ export class SubjectsService {
         return await this.subjectRepository.find();
     }
 
-    async getSubjectById(id: number){
+    async getSubjectById(id: number) {
         const subjectFound = await this.subjectRepository.findOne({
             where: {
                 id: id
@@ -24,38 +24,54 @@ export class SubjectsService {
             relations: ['tasks']
         });
 
-        if(!subjectFound) return new HttpException('Subject not found', HttpStatus.NOT_FOUND);
+        if (!subjectFound) throw new HttpException('Subject not found', HttpStatus.NOT_FOUND);
         return subjectFound;
     }
 
-    async createSubject(subject: CreateSubjectDto){
+    private async getSubjectByName(name: string) {
         const subjectFound = await this.subjectRepository.findOne({
             where: {
-                name: subject.name
+                name: name
             }
         });
 
-        if(subjectFound) return new HttpException('Subject already exists', HttpStatus.CONFLICT);
-
-        const newSubject = this.subjectRepository.create(subject);
-        return this.subjectRepository.save(newSubject);
+        if (!subjectFound) throw new HttpException('Subject not found', HttpStatus.NOT_FOUND);
+        return subjectFound;
     }
 
-    async updateSubject(id: number, subject: UpdateSubjectDto){
-        const subjectFound = await this.getSubjectById(id);
+    async createSubject(subject: CreateSubjectDto) {
+        try{
+            const subjectFound = await this.getSubjectByName(subject.name);
+            if(subjectFound) throw new HttpException('Subject already exists', HttpStatus.CONFLICT);
+        } catch (error) {
+            if(error instanceof HttpException && error.getStatus() === HttpStatus.NOT_FOUND){
+                const newSubject = this.subjectRepository.create(subject);
+                return await this.subjectRepository.save(newSubject);
+            }
+            throw error;
+        }
+    }
 
-        if(!subjectFound) return new HttpException('Subject not found', HttpStatus.NOT_FOUND);
+    async updateSubject(id: number, subject: UpdateSubjectDto) {
+        const [existingSubjectById, existingSubjectByName] : [Subject | HttpException, Subject | HttpException] = await Promise.all([
+            this.getSubjectById(id).catch(error => error),
+            this.getSubjectByName(subject.name).catch(error => error)
+        ]);
 
-        const updatedSubject = Object.assign(subjectFound, subject);
+        if (existingSubjectById instanceof HttpException) throw existingSubjectById;
+
+
+        if (!(existingSubjectByName instanceof HttpException))
+            throw new HttpException('Subject already exists', HttpStatus.CONFLICT);
+
+        const updatedSubject = Object.assign(existingSubjectById, subject);
         return this.subjectRepository.save(updatedSubject);
     }
 
-    async deleteSubject(id: number){
+    async deleteSubject(id: number) {
         const subjectFound = await this.getSubjectById(id);
 
-        if(!subjectFound) return new HttpException('Subject not found', HttpStatus.NOT_FOUND);
-
-        this.subjectRepository.delete({id});
+        await this.subjectRepository.delete({ id });
         return subjectFound;
     }
 }
